@@ -1,0 +1,31 @@
+{
+  "name": "freeproxylists-scrapper",
+  "version": "0.0.1",
+  "description": "Page scrapper that retrieves proxy server information from FreeProxyLists website",
+  "license": "BSD-2-Clause",
+  "repository": "freeproxylists-scrapper",
+  "author": {
+    "name": "Rodrigo Gomes da Silva",
+    "email": "rodrigo.smscom@gmail.com",
+    "web": "https://github.com/rodrigogs/freeproxylists-scrapper"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "ava tests.js --serial"
+  },
+  "keywords": [
+    "crawler",
+    "proxy",
+    "web",
+    "cheat",
+    "spider",
+    "scrapper",
+    "freeproxylists"
+  ],
+  "devDependencies": {
+    "ava": "^0.9.1"
+  },
+  "dependencies": {
+    "phantom": "^0.8.4"
+  }
+}
