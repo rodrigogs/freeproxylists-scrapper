@@ -24,7 +24,7 @@ module.exports = {
                                 var paginationDiv = $('div.page').first(),
                                     pages = $('a:not(:contains("Next"))', paginationDiv).last().text();
 
-                                return pages ? parseInt(pages, 1) : 1;
+                                return pages ? parseInt(pages) : 1;
                             }
                             /* XXX */
                             , pages => {
