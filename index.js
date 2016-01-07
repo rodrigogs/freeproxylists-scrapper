@@ -120,7 +120,7 @@ module.exports = {
                                                     break;
                                             }
 
-                                            gtws.provider = 'FreeProxyLists';
+                                            gateway.provider = 'FreeProxyLists';
                                             gtws.push(gateway);
                                         });
                                     });
