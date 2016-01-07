@@ -1,6 +1,7 @@
 'use strict';
 
 const phantom = require('phantom');
+const async = require('async');
 const URL = 'http://www.freeproxylists.net/';
 const JQUERY_URL = 'https://code.jquery.com/jquery-2.1.4.min.js';
 
@@ -8,42 +9,49 @@ module.exports = {
 
     /**
      * Retrieve the current pagination max number.
-     * 
+     *
      * @param {Function} callback
      * @returns {Number}
      */
     getPages: (callback) => {
-        phantom.create(ph => {
-            ph.createPage(page => {
-                page.open(URL, status => {
+        async.waterfall([
+            (cb) => {
+                phantom.create(ph => cb(null, ph) );
+            },
+            (ph, cb) => {
+                ph.createPage(page => cb(null, ph, page) );
+            },
+            (ph, page, cb) => {
+                page.open(URL, status => cb(null, ph, page) );
+            },
+            (ph, page, cb) => {
+                page.includeJs(JQUERY_URL, () => cb(null, ph, page) );
+            },
+            (ph, page, cb) => {
+                page.evaluate(
+                    /* It runs on the virtual browser, so we cant use ES6 */
+                    function () {
+                        var paginationDiv = $('div.page').first(),
+                            pages = $('a:not(:contains("Next"))', paginationDiv).last().text();
 
-                    page.includeJs(JQUERY_URL, () => {
-                        page.evaluate(
-                            /* It runs on the virtual browser, so we cant use ES6 */
-                            function () {
-                                var paginationDiv = $('div.page').first(),
-                                    pages = $('a:not(:contains("Next"))', paginationDiv).last().text();
-
-                                return pages ? parseInt(pages) : 1;
-                            }
-                            /* XXX */
-                            , pages => {
-                                callback(pages);
-                                ph.exit();
-                            }
-                        );
-                    });
-                });
-            });
-        });
+                        return pages ? parseInt(pages) : 1;
+                    }
+                    /* XXX */
+                    , pages => {
+                        callback(pages);
+                        ph.exit();
+                    }
+                );
+            }
+        ]);
     },
 
     /**
      * Crawl www.freeproxylists.net and retrieve a list of proxy servers.
-     * 
+     *
      * @param {Number} page Page number
      * @param {Function} callback function (gateways) {}
-     * @returns Object[] 
+     * @returns Object[]
      *          hostname
      *          port
      *          protocol
@@ -84,14 +92,14 @@ module.exports = {
                                 var gtws = [];
                                 var table = $('table.DataGrid tbody');
                                 if (table) {
-    
+
                                     var rows = table.find('tr.Odd, tr.Even');
                                     rows.each(function (index, tr) {
-    
+
                                         var gateway = {};
                                         var cols = $(tr).find('td');
                                         cols.each(function (index, col) {
-    
+
                                             col = $(col);
                                             switch (col.index()) {
                                                 case 0:
@@ -125,7 +133,7 @@ module.exports = {
                                         });
                                     });
                                 }
-    
+
                                 return gtws;
                             }
                             /* XXX */
