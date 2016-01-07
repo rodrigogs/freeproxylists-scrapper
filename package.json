@@ -26,7 +26,8 @@
     "node": ">=4.0.0"
   },
   "devDependencies": {
-    "ava": "^0.9.1"
+    "ava": "^0.9.1",
+    "phantomjs": "^1.9.19"
   },
   "dependencies": {
     "phantom": "^0.8.4"
