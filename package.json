@@ -22,6 +22,9 @@
     "scrapper",
     "freeproxylists"
   ],
+  "engines": {
+    "node": ">=4.0.0"
+  },
   "devDependencies": {
     "ava": "^0.9.1"
   },
