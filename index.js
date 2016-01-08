@@ -64,7 +64,7 @@ module.exports = {
     /**
      * Crawl www.freeproxylists.net and retrieve a list of proxy servers.
      *
-     * @param {Number} page Page number
+     * @param {Object} options {page, proxy}
      * @param {Function} callback function (gateways) {}
      * @returns Object[]
      *          hostname
@@ -76,13 +76,17 @@ module.exports = {
      *          city
      *          uptime
      */
-    crawl: (page, callback) => {
-        if (page instanceof Function) {
-            callback = page;
-            page = null;
+    crawl: (options, callback) => {
+        if (!options) {
+            options = {};
         }
 
-        const PAGE_URL = page ? `${URL}?page=${page}` : URL;
+        if (options instanceof Function) {
+            callback = options;
+            options = {};
+        }
+
+        const PAGE_URL = options.page ? `${URL}?page=${options.page}` : URL;
 
         async.waterfall([
             (cb) => {
@@ -91,6 +95,16 @@ module.exports = {
 
             (ph, cb) => {
                 ph.createPage(page => cb(null, ph, page) );
+            },
+
+            (ph, page, cb) => {
+                if (!options.proxy) {
+                    return cb(null, ph, page);
+                }
+
+                ph.set('proxy', options.proxy, () => {
+                    cb(null, ph, page);
+                });
             },
 
             (ph, page, cb) => {
@@ -187,7 +201,7 @@ module.exports = {
                                     }
                                 );
                             }
-                        ], (err, gateways) => cb(err, gateways));
+                        ], cb);
                     }
                 ], (err, gateways) => {
                     ph.exit();
