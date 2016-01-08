@@ -84,8 +84,7 @@ module.exports = {
 
             (ph, page, cb) => {
                 page.open(URL, status => {
-                    console.log(`Opened page ${URL} with ${status}`);
-                    cb(null, ph, page)
+                    cb(null, ph, page);
                 });
             },
 
@@ -97,7 +96,7 @@ module.exports = {
                             return (el.innerText.indexOf('403 Forbidden') > -1);
                         }, isForbidden => {
                             if (isForbidden) {
-                                console.log('This ip is blacklisted for freeproxylists.net');
+                                console.error('Your ip is blacklisted for freeproxylists.net');
                                 callback([]);
                                 cb();
                                 return ph.exit();
