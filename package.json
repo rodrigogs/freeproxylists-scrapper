@@ -1,6 +1,6 @@
 {
   "name": "freeproxylists-scrapper",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Page scrapper that retrieves proxy server information from FreeProxyLists website",
   "license": "BSD-2-Clause",
   "repository": "freeproxylists-scrapper",
@@ -31,6 +31,6 @@
   },
   "dependencies": {
     "async": "^1.5.1",
-    "phantom": "^0.8.4"
+    "node-phantom-simple": "^2.2.2"
   }
 }
