@@ -1,6 +1,8 @@
 # FreeProxyLists Scrapper
 
 [![Build Status](https://travis-ci.org/rodrigogs/freeproxylists-scrapper.svg?branch=master)](https://travis-ci.org/rodrigogs/freeproxylists-scrapper)
+[![npm version](https://badge.fury.io/js/freeproxylists-scrapper.svg)](https://badge.fury.io/js/freeproxylists-scrapper)
+[![npm](https://img.shields.io/npm/dt/freeproxylists-scrapper.svg)](https://www.npmjs.com/package/freeproxylists-scrapper)
 
 Page scrapper that retrieves proxy server information from FreeProxyLists website.
 
