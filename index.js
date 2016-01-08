@@ -24,7 +24,12 @@ module.exports = {
             },
 
             (ph, page, cb) => {
-                page.open(URL, status => cb(null, ph, page) );
+                page.open(URL, status => {
+                    if (status !== 'success') {
+                        return cb(new Error(`Error opening page for ${URL}`), null, ph);
+                    }
+                    cb(null, ph, page);
+                });
             },
 
             (ph, page, cb) => {
@@ -42,12 +47,18 @@ module.exports = {
                     }
                     /* XXX */
                     , pages => {
-                        callback(pages);
-                        ph.exit();
+                        cb(null, pages, ph);
                     }
                 );
             }
-        ]);
+        ], (err, pages, ph) => {
+            ph.exit();
+
+            if (err) {
+                return callback(err);
+            }
+            callback(null, pages);
+        });
     },
 
     /**
@@ -84,23 +95,24 @@ module.exports = {
 
             (ph, page, cb) => {
                 page.open(URL, status => {
+                    if (status !== 'success') {
+                        return cb(new Error(`Error opening page for ${URL}`, null, ph));
+                    }
                     cb(null, ph, page);
                 });
             },
 
             (ph, page, cb) => {
-                async.parallel([
+                async.waterfall([
                     cb => {
                         page.evaluate(function () {
                             var el = document.querySelector('body');
                             return (el.innerText.indexOf('403 Forbidden') > -1);
                         }, isForbidden => {
                             if (isForbidden) {
-                                console.error('Your ip is blacklisted for freeproxylists.net');
-                                callback([]);
-                                cb();
-                                return ph.exit();
+                                return cb(new Error('Your ip is blacklisted for freeproxylists.net'), null);
                             }
+                            cb();
                         });
                     },
 
@@ -171,14 +183,20 @@ module.exports = {
                                                     && !!n.protocol;
                                             });
 
-                                        callback(gateways);
-                                        ph.exit();
+                                        cb(null, gateways);
                                     }
                                 );
                             }
-                        ]);
+                        ], (err, gateways) => cb(err, gateways));
                     }
-                ]);
+                ], (err, gateways) => {
+                    ph.exit();
+
+                    if (err) {
+                        return callback(err);
+                    }
+                    callback(null, gateways, ph);
+                });
             }
         ]);
     }

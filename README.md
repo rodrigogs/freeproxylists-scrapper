@@ -13,8 +13,14 @@ Make sure phantomjs is installed!
 ```javascript
 var FreeProxyLists = require('freeproxylists-scrapper');
 
-FreeProxyLists.getPages(function (pages) {
-    FreeProxyLists.crawl(pages, function (proxylist) {
+FreeProxyLists.getPages(function (err, pages) {
+    if (err) {
+        return console.log('Dammit!');
+    }
+    FreeProxyLists.crawl(pages, function (err, proxylist) {
+        if (err) {
+            return console.log('Dammit!');
+        }
         for (proxy in proxylist) {
             // You have a proxy here
         }
