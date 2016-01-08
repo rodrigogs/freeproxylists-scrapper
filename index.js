@@ -13,7 +13,16 @@ module.exports = {
      * @param {Function} callback
      * @returns {Number}
      */
-    getPages: (callback) => {
+    getPages: (options, callback) => {
+        if (!options) {
+            options = {};
+        }
+
+        if (options instanceof Function) {
+            callback = options;
+            options = {};
+        }
+
         async.waterfall([
             (cb) => {
                 phantom.create(ph => cb(null, ph) );
@@ -21,6 +30,16 @@ module.exports = {
 
             (ph, cb) => {
                 ph.createPage(page => cb(null, ph, page) );
+            },
+
+            (ph, page, cb) => {
+                if (!options.proxy) {
+                    return cb(null, ph, page);
+                }
+
+                ph.set('proxy', options.proxy, () => {
+                    cb(null, ph, page);
+                });
             },
 
             (ph, page, cb) => {
