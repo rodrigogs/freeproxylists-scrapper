@@ -1,24 +1,27 @@
 'use strict';
 
-const driver = require('node-phantom-simple');
+const phantom = require('phantom');
 const async = require('async');
+const validator = require('validator');
+
 const URL = 'http://www.freeproxylists.net/';
 const JQUERY_URL = 'https://code.jquery.com/jquery-2.1.4.min.js';
 
+/**
+ * @module FreeProxyListsProvider
+ */
 module.exports = {
 
     /**
      * Retrieve the current pagination max number.
      * 
-     * @param {Object} options {proxy: {hostname, port, protocol, user, password}}
+     * @param {Object} options
      * @param {Function} callback
      * @returns {Number}
      */
     getPages: (options, callback) => {
-        if (!options) {
-            options = {};
-        }
-
+        options = options || {};
+        
         if (options instanceof Function) {
             callback = options;
             options = {};
@@ -26,55 +29,57 @@ module.exports = {
 
         async.waterfall([
             cb => {
-                driver.create({ path: require('phantomjs').path }, cb);
-            },
-
-            (browser, cb) => {
-                browser.createPage((err, page) => cb(err, browser, page));
-            },
-
-            (browser, page, cb) => {
-                if (!options.proxy) {
-                    return cb(null, browser, page);
-                }
-
-                browser.setProxy(options.proxy.hostname, options.proxy.port,
-                            options.proxy.protocol, options.proxy.user,
-                            options.proxy.password, err => {
-                    cb(err, browser, page);
-                });
-            },
-
-            (browser, page, cb) => {
-                page.open(URL, (err, status) => {
-                    if (status !== 'success') {
-                        return cb(new Error(`Error opening page for ${URL}`), null, browser);
+                const args = options.proxy ? {
+                    parameters: {
+                        proxy: options.proxy
                     }
-                    cb(err, browser, page);
+                } : {};
+
+                phantom.create(args, ph => cb(null, ph) );
+            },
+
+            (ph, cb) => {
+                ph.createPage(page => cb(null, ph, page) );
+            },
+
+            (ph, page, cb) => {
+                page.open(URL, status => {
+                    if (status !== 'success') {
+                        return cb(new Error(`Error opening page for ${URL}`, null, ph));
+                    }
+                    cb(null, ph, page);
                 });
             },
 
-            (browser, page, cb) => {
-                page.includeJs(JQUERY_URL, (err) => cb(err, browser, page) );
+            (ph, page, cb) => {
+                page.includeJs(JQUERY_URL, () => cb(null, ph, page) );
             },
 
-            (browser, page, cb) => {
+            (ph, page, cb) => {
                 page.evaluate(
                     /* It runs on the virtual browser, so we cant use ES6 */
                     function () {
                         var paginationDiv = $('div.page').first(),
                             pages = $('a:not(:contains("Next"))', paginationDiv).last().text();
-
-                        return pages ? parseInt(pages) : 1;
+                        
+                        try {
+                            pages = parseInt(pages);
+                        } catch (ex) {
+                            pages = 1;
+                        } finally {
+                            return pages;
+                        }
                     }
                     /* XXX */
-                    , (err, pages) => {
-                        cb(err, pages, browser);
+                    ,pages => {
+                        cb(null, pages, ph);
                     }
                 );
             }
-        ], (err, pages, browser) => {
-            browser.exit();
+        ], (err, pages, ph) => {
+            if (ph) {
+                ph.exit();
+            }
 
             if (err) {
                 return callback(err);
@@ -86,7 +91,7 @@ module.exports = {
     /**
      * Crawl www.freeproxylists.net and retrieve a list of proxy servers.
      *
-     * @param {Object} options {page, proxy: {hostname, port, protocol, user, password}}
+     * @param {Object} options
      * @param {Function} callback function (gateways) {}
      * @returns Object[]
      *          hostname
@@ -108,57 +113,51 @@ module.exports = {
             options = {};
         }
 
-        const PAGE_URL = options.page ? `${URL}?page=${options.page}` : URL;
+        let url = options.url || URL;
+        const PAGE_URL = options.page ? `${url}?page=${options.page}` : url;
 
         async.waterfall([
-            (cb) => {
-                driver.create({ path: require('phantomjs').path }, cb);
-            },
-
-            (browser, cb) => {
-                browser.createPage((err, page) => cb(err, browser, page));
-            },
-
-            (browser, page, cb) => {
-                if (!options.proxy) {
-                    return cb(null, browser, page);
-                }
-
-                browser.setProxy(options.proxy.hostname, options.proxy.port,
-                            options.proxy.protocol, options.proxy.user,
-                            options.proxy.password, err => {
-                    cb(err, browser, page);
-                });
-            },
-
-            (browser, page, cb) => {
-                page.open(URL, (err, status) => {
-                    if (status !== 'success') {
-                        return cb(new Error(`Error opening page for ${URL}`, null, browser));
+            cb => {
+                const args = options.proxy ? {
+                    parameters: {
+                        proxy: options.proxy
                     }
-                    cb(err, browser, page);
+                } : {};
+
+                phantom.create(args, ph => cb(null, ph) );
+            },
+
+            (ph, cb) => {
+                ph.createPage(page => cb(null, ph, page) );
+            },
+
+            (ph, page, cb) => {
+                page.open(url, status => {
+                    if (status !== 'success') {
+                        return cb(new Error(`Error opening page for ${url}`, null, ph));
+                    }
+                    cb(null, ph, page);
                 });
             },
 
-            (browser, page, cb) => {
-                
+            (ph, page, cb) => {
                 async.waterfall([
                     cb => {
                         page.evaluate(function () {
                             var el = document.querySelector('body');
                             return (el.innerText.indexOf('403 Forbidden') > -1);
-                        }, (err, isForbidden) => {
+                        }, isForbidden => {
                             if (isForbidden) {
-                                return cb(new Error('Your ip is blacklisted for freeproxylists.net'), null);
+                                return cb(new Error('Your ip is blacklisted for freeproxylists.net'), null, ph);
                             }
-                            cb(err);
+                            cb();
                         });
                     },
 
                     cb => {
                         async.waterfall([
                             cb => {
-                                page.includeJs(JQUERY_URL, (err) => cb(err));
+                                page.includeJs(JQUERY_URL, () => cb());
                             },
 
                             cb => {
@@ -213,23 +212,26 @@ module.exports = {
                                         return gtws;
                                     }
                                     /* XXX */
-                                    , (err, gateways) => {
+                                    , gateways => {
                                         gateways = gateways
                                             .filter(n => {
-                                                return !!n
-                                                    && !!n.hostname
-                                                    && !!n.port
-                                                    && !!n.protocol;
+                                                return n
+                                                    && n.hostname
+                                                    && validator.isIP(n.hostname)
+                                                    && n.port
+                                                    && n.protocol;
                                             });
 
-                                        cb(err, gateways);
+                                        cb(null, gateways, ph);
                                     }
                                 );
                             }
                         ], cb);
                     }
-                ], (err, gateways) => {
-                    browser.exit();
+                ], (err, gateways, ph) => {
+                    if (ph) {
+                        ph.exit();
+                    }
                     callback(err, gateways);
                 });
             }
