@@ -18,11 +18,10 @@ function _loadPage(options) {
     options = options || {};
 
     return new Promise((resolve, reject) => {
-        let promise = phantom.create(['--ignore-ssl-errors=yes', '--load-images=no']),
-            instance,
+        let instance,
             page;
 
-        promise
+        phantom.create(['--ignore-ssl-errors=yes', '--load-images=no'])
             .then(ph => {
                 instance = ph;
                 return instance.createPage();
@@ -46,13 +45,13 @@ function _loadPage(options) {
             })
             .then(() => {
                 let ret = {instance: instance, page: page};
-                ret.kill = () => ret.instance.kill();
+                ret.exit = () => ret.instance.exit();
                 return Promise.resolve(ret);
             })
             .then(_verifyDisponibility)
             .then(resolve)
             .catch(err => {
-                instance.kill();
+                instance.exit();
                 reject(err);
             });
     });
@@ -88,10 +87,16 @@ function _verifyDisponibility(loaded) {
  * Retrieve the current pagination max number.
  *
  * @param {Object} options
+ * @param {function} callback
  * @returns {Promise}
  */
-function _getPages(options) {
+function _getPages(options, callback) {
     options = options || {};
+
+    if (options instanceof Function) {
+        callback = options;
+        options = {};
+    }
 
     return new Promise((resolve, reject) => {
         _loadPage(options).then(loaded => {
@@ -107,11 +112,19 @@ function _getPages(options) {
 
                 return pages;
             }).then(pages => {
-                loaded.kill();
+                loaded.exit();
+                if (callback) {
+                    callback(null, pages);
+                }
                 resolve(pages);
             });
 
-        }).catch(reject);
+        }).catch(err => {
+            if (callback) {
+                callback(err);
+            }
+            reject(err);
+        });
     });
 }
 
@@ -119,6 +132,7 @@ function _getPages(options) {
  * Crawl www.freeproxylists.net and retrieve a list of proxy servers.
  *
  * @param {Object} options
+ * @param {function} callback
  * @returns {Promise} Object[]
  *          hostname
  *          port
@@ -129,8 +143,13 @@ function _getPages(options) {
  *          city
  *          uptime
  */
-function _crawl(options) {
+function _crawl(options, callback) {
     options = options || {};
+
+    if (options instanceof Function) {
+        callback = options;
+        options = {};
+    }
 
     options.url = options.page ? `${URL}?page=${options.page}` : URL;
 
@@ -195,11 +214,19 @@ function _crawl(options) {
                             && n.protocol;
                     });
 
-                loaded.kill();
+                loaded.exit();
+                if (callback) {
+                    callback(null, gateways);
+                }
                 resolve(gateways);
             });
 
-        }).catch(reject);
+        }).catch(err => {
+            if (callback) {
+                callback(err);
+            }
+            reject(err);
+        });
     });
 }
 
