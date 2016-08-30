@@ -21,7 +21,7 @@ function _loadPage(options) {
         let instance,
             page;
 
-        phantom.create(['--ignore-ssl-errors=yes', '--load-images=no'])
+        phantom.create(['--ignore-ssl-errors=yes', '--load-images=no', '--cookies-file=cookies.txt'])
             .then(ph => {
                 instance = ph;
                 return instance.createPage();
@@ -34,9 +34,7 @@ function _loadPage(options) {
                     return Promise.resolve();
                 }
             })
-            .then(() => {
-                return page.open(options.url || URL);
-            })
+            .then(() => page.open(options.url || URL))
             .then(status => {
                 if (status !== 'success') {
                     throw new Error(`Error opening page for ${URL}`, null, ph);
@@ -73,13 +71,13 @@ function _verifyDisponibility(loaded) {
             }
         }).then(status => {
             if (status === 'forbidden') {
-                return reject(new Error('Your ip is blacklisted for freeproxylists.net'));
+                throw new Error('Your ip is blacklisted for freeproxylists.net');
             }
             if (status === 'captcha') {
-                return reject(new Error('Captcha detected!'));
+                throw new Error('Captcha detected!');
             }
             resolve(loaded);
-        });
+        }).catch(reject);
     });
 }
 
@@ -121,7 +119,7 @@ function _getPages(options, callback) {
 
         }).catch(err => {
             if (callback) {
-                callback(err);
+                return callback(err);
             }
             reject(err);
         });
@@ -223,7 +221,7 @@ function _crawl(options, callback) {
 
         }).catch(err => {
             if (callback) {
-                callback(err);
+                return callback(err);
             }
             reject(err);
         });
